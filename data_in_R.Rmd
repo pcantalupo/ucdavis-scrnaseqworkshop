@@ -88,7 +88,7 @@ First lets extract the Summary numbers and create a summary table
 
 ```{r summary_table, error=F, warning=F}
 sn <- grep("^SN",data, value=TRUE)
-sn <- separate(data.frame(sn),col=1, into=c("ID", "Name","Value"), sep="\t")[,-1]
+sn <- separate(data.frame(sn), col=1, into=c("ID", "Name","Value"), sep="\t")[,-1]
 kable(sn, caption="Summary numbers")
 ```
 
@@ -227,8 +227,8 @@ GC Coverage data
   * and remove the first column '[,-1]', the GCD
 
 ```{r}
-gc <- grep("^GCD",data, value=TRUE)
-gc <- separate(data.frame(gc), col=1, into=c("ID", "coverage_range", "coverage", "bases", "foo", "bar"), sep="\t", convert=TRUE)[,-1]
+gccov <- grep("^GCD",data, value=TRUE)
+gccov <- separate(data.frame(gccov), col=1, into=c("ID", "coverage_range", "coverage", "bases", "foo", "bar"), sep="\t", convert=TRUE)[,-1]
 ```
 
 
@@ -244,6 +244,11 @@ new_is <- mutate(is,poutward=outward/`all pairs`, pinward=inward/`all pairs`)
 **On your own** Tasks
 
 Try using "distinct", on is (or new_is) on the outward and inward columns
+
+```{r}
+new_is %>% distinct(inward)   # 652 distinct inward values
+```
+
 
 ## **On your own** Tasks
 
@@ -344,7 +349,7 @@ g <- g + geom_line(aes(y=get("all pairs")), color="black") +
     geom_line(aes(y=get("other")), color="green")
 g <- g +
     labs( x = "insert size", y = "all pairs", title ="Mapped insert sizes", subtitle = "All Pairs", caption = "all pairs insert size")
-g <- g + coord_cartesian(xlim=c(0,500), ylim=c(0,600000))
+g <- g + coord_cartesian(xlim=c(0,500), ylim=c(0,60000))
 g <- g + theme_light()
 plot(g)
 ```
