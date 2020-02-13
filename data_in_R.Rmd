@@ -2,6 +2,8 @@
 title: "Data_in_R"
 author: "Bioinformatics Core"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE, echo=FALSE, warning=FALSE, error=FALSE}
@@ -372,13 +374,16 @@ h
 Sometimes we may need to transform our data before plotting. The melt funciton from reshape2 takes data in wide format (data are in columns) and stacks a set of columns into a single column of data. In the ACTG object we can stack bases values by cycle.
 
 ```{r base_comp_melt}
+actg
 actgm <- melt(actg,id="cycle")
+head(actgm); tail(actgm)
 ```
 
 now head the new actgm object. What did melt do?
 
 ```{r plot_base_comp}
-ic <- ggplot(actgm, aes(as.numeric(cycle), as.numeric(value), by=variable, colour=variable))
+# Don't need the 'by=variable' option
+ic <- ggplot(actgm, aes(as.numeric(cycle), as.numeric(value), colour=variable))
 i <- ic + geom_line() + coord_cartesian(ylim=c(0,100))
 i
 ```
@@ -394,12 +399,16 @@ i2
 
 ** On your own**: Try some other geometries (Ex. bin2d, col, count, which generate an 'interpretable' plot)
 
+
 ### Plotting a heatmap of qualities
 
 First lets melt the quality scores
 
 ```{r fq_melt}
+head(fq)
+dim(fq)
 fqm <- melt(fq,id=c("Pair","Cycle"))
+head(fqm); dim(fqm)
 ```
 
 Take a look at the new object
@@ -445,6 +454,7 @@ k <- k + geom_line(aes(y=as.numeric(deletion_count)), color = "black", size=1.5)
 k
 ```
 
+
 Lets try changing the Y axis to log scale
 ```{r indel_plot2, warning=F, error=F}
 k <- k + scale_y_log10()
@@ -454,7 +464,7 @@ k
 Tweek the grid elments using theme
 ```{r grid_tweek}
 k <- k + theme(panel.grid.minor = element_blank(),
-  panel.grid.major = element_line(color = "gray50", size = 0.5),
+  panel.grid.major = element_line(color = "blue", size = 0.5),
   panel.grid.major.x = element_blank())
 k
 ```
