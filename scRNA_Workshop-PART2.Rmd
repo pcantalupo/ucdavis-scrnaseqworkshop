@@ -5,6 +5,14 @@ output:
     html_document:
       keep_md: TRUE
 ---
+
+# load Object from this script if you've already finished this script
+```{r}
+load(file="pre_sample_corrected.RData")     # should contain the variable genes
+length(VariableFeatures(experiment.aggregate)) # n = 2000
+```
+
+
 ## Load libraries
 ```{r, warning=FALSE,error=FALSE,message=FALSE}
 library(Seurat)
@@ -36,7 +44,6 @@ round(do.call("cbind", tapply(experiment.aggregate$percent.mito, Idents(experime
 ```
 
 Table of cell cycle
-
 ```{r}
 table(experiment.aggregate@meta.data$cell.cycle) %>% kable(caption = "Number of Cells in each Cell Cycle Stage", col.names = c("Stage", "Count"), align = "c") %>% kable_styling()
 ```
@@ -57,8 +64,7 @@ VlnPlot(
 Gene Plot, scatter plot of gene expression across cells, (colored by sample)
 ```{r}
 FeatureScatter(experiment.aggregate, feature1 = "nCount_RNA", feature2 = "percent.mito")
-FeatureScatter(
-  experiment.aggregate, "nCount_RNA", "nFeature_RNA",
+FeatureScatter(experiment.aggregate, "nCount_RNA", "nFeature_RNA",
   pt.size = 0.5)
 ```
 
@@ -96,6 +102,7 @@ experiment.aggregate.genes <- FilterGenes(object = experiment.aggregate, min.val
 experiment.aggregate.genes
 ```
 
+
 ```{r}
 table(experiment.aggregate$orig.ident)
 ```
@@ -124,11 +131,8 @@ experiment.aggregate <- FindVariableFeatures(
   selection.method = "vst")
 
 length(VariableFeatures(experiment.aggregate))
-
 top10 <- head(VariableFeatures(experiment.aggregate), 10)
-
 top10
-
 vfp1 <- VariableFeaturePlot(experiment.aggregate)
 vfp1 <- LabelPoints(plot = vfp1, points = top10, repel = TRUE)
 vfp1
@@ -137,7 +141,47 @@ vfp1
 #### Question(s)
 
 1. Play some with the filtering parameters, see how results change?
+
+```{r}
+myfiltered <- FilterGenes(object = experiment.aggregate, min.value = 5, min.cells = 50)
+myfiltered  # wow only 9 genes are present in at least 50 cells with min counts of 5
+```
+
+
 2. How do the results change if you use selection.method = "dispersion" or selection.method = "mean.var.plot"
+```{r}
+?FindVariableFeatures
+
+mvp <- FindVariableFeatures(
+  object = experiment.aggregate,
+  selection.method = "mean.var.plot")
+length(VariableFeatures(mvp))   # n = 670
+mvp.top10 <- head(VariableFeatures(mvp), 10)
+mvp.top10
+p.mvp<- VariableFeaturePlot(mvp)
+p.mvp <- LabelPoints(plot = p.mvp, points = mvp.top10, repel = TRUE)
+p.mvp
+
+intersect(top10, mvp.top10)   # only two of top10 are common between VST and MeanVarPlot
+length(intersect(VariableFeatures(mvp), VariableFeatures(experiment.aggregate)))  # 347 HVG in common
+
+
+disp <- FindVariableFeatures(
+  object = experiment.aggregate,
+  selection.method = "dispersion")
+length(VariableFeatures(disp))   # n = 2000
+disp.top10 <- head(VariableFeatures(disp), 10)
+disp.top10
+p.disp <- VariableFeaturePlot(disp)
+p.disp <- LabelPoints(plot = p.disp, points = disp.top10, repel = TRUE)
+p.disp
+
+intersect(top10, disp.top10)   # only two of top10 are common between VST and Disp
+length(intersect(VariableFeatures(disp), VariableFeatures(experiment.aggregate)))  # 620 HVG in common
+
+CombinePlots(plots=list(vfp1, p.disp))
+
+```
 
 
 ## Finally, lets save the filtered and normalized data
