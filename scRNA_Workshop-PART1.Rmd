@@ -7,6 +7,13 @@ output:
     html_notebook: default
 ---
 
+# load Object from this script if you've already finished this script
+```{r}
+load(file="original_seurat_object.RData")  # should contain the added metadata columns: percent.miuto, percent.mcm, cell.cycle and batchid
+head(experiment.aggregate@meta.data)
+```
+
+
 # Single Cell Analysis with Seurat and some custom code!
 
 [Seurat](http://satijalab.org/seurat/) is a popular R package that is designed for QC, analysis, and exploration of single cell RNA-seq data. Seurat aims to enable users to identify and interpret sources of heterogeneity from single cell transcriptomic measurements, and to integrate diverse types of single cell data. Further, the authors provide several [tutorials](http://satijalab.org/seurat/get_started.html), on their website.
@@ -109,6 +116,7 @@ experiment.aggregate <- AddMetaData(
   col.name = "batchid")
 
 table(experiment.aggregate$batchid)
+table(experiment.aggregate$batchid, experiment.aggregate$orig.ident)  # Batch and Sample are confounding since UCDAdhVitE is only in Batch1 and UCDSupp and UCDVit arew in Batch2
 ```
 
 ### Lets spend a little time getting to know the Seurat object.
@@ -130,13 +138,44 @@ head(experiment.aggregate@meta.data)
 2. What columns are available in meta.data?
 3. Look up the help documentation for subset?
 
+```{r}
+# My code for 1. Empty slots
+sapply(slotNames(experiment.aggregate), function(sn) {
+  #head(slot(experiment.aggregate, sn))
+  length(slot(experiment.aggregate, sn))
+  
+})
+```
+
+```{r}
+# My code for 2. What cols are availabe in meta.data
+colnames(experiment.aggregate@meta.data)
+```
+
+```{r}
+# My code for 3. Look up help docs on subset
+?Seurat::subset()
+```
+
+
 ## Finally, save the original object, write out a tab-delimited table that could be read into excel, and view the object.
 ```{r}
+#  Experiment.data contains raw 10X counts in sparse Matrix dgCMatrix
 write.table(as.matrix(experiment.data),"raw.datatable.txt",sep="\t",col.names=T,row.names=T)
 experiment.aggregate
 
 ## Original dataset in Seurat class, with no filtering
 save(experiment.aggregate,file="original_seurat_object.RData")
+```
+
+
+I'm confused. I tried to get the 'raw.data' from Seurat expecting to get the same data in 'experiment.data' (3000 cells X 31053 genes). Instead, 'counts' and 'data' in the assays$RNA slot are identical. WHY??
+```{r}
+foo = GetAssayData(object = experiment.aggregate, slot = "counts") # see https://satijalab.org/seurat/essential_commands.html
+dim(foo)
+bar = GetAssayData(object = experiment.aggregate)
+dim(bar)
+identical(foo, bar)
 ```
 
 ## Get the next Rmd file
