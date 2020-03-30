@@ -8,6 +8,7 @@ output:
 ## Load libraries
 ```{r, warning=FALSE,error=FALSE,message=FALSE}
 library(Seurat)
+library(ggplot2)
 ```
 
 ## Load the Seurat object
@@ -18,9 +19,17 @@ experiment.test <- experiment.aggregate
 set.seed(12345)
 rand.genes <- sample(1:nrow(experiment.test), 500,replace = F)
 mat <- as.matrix(GetAssayData(experiment.test, slot="data"))
+mat[1:5,1:5]
+
+library(dplyr)
+experiment.test@meta.data %>% count(batchid, orig.ident) # All 808 cells of ADJ_VITE group are in Batch2
+
+# adding extra signal to a random set of 500 genes in Batch2
 mat[rand.genes,experiment.test$batchid=="Batch2"] <- mat[rand.genes,experiment.test$batchid=="Batch2"] + 0.18
 experiment.test = SetAssayData(experiment.test, slot="data", new.data= mat )
 ```
+
+
 
 ## Exploring Batch effects 3 ways, none, Seurat [vars.to.regress] and COMBAT
 
@@ -36,9 +45,9 @@ experiment.test.noc <- ScaleData(object = experiment.test)
 
 ### Run PCA
 ```{r, fig.align="center", fig.caption="Uncorrected PCA plot"}
-experiment.test.noc <- RunPCA(object = experiment.test.noc)
-DimPlot(object = experiment.test.noc, group.by = "batchid", reduction = "pca")
-DimPlot(object = experiment.test.noc, group.by = "batchid", dims = c(2,3), reduction = "pca")
+experiment.test.noc <- RunPCA(object = experiment.test.noc, verbose = F)
+#DimPlot(object = experiment.test.noc, group.by = "batchid", reduction = "pca")
+#DimPlot(object = experiment.test.noc, group.by = "batchid", dims = c(2,3), reduction = "pca")
 ```
 
 PCA Elbow plot to determine how many principal components to use in downstream analyses.  Components after the "elbow" in the plot generally explain little additional variability in the data.
@@ -56,56 +65,91 @@ experiment.test.noc <- RunTSNE(object = experiment.test.noc, dims = 1:pcs.use)
 DimPlot(object = experiment.test.noc,  group.by = "batchid")
 ```
 
+
+
+
 ## Correct for sample to sample differences (seurat)
 
 Use vars.to.regress to correct for the sample to sample differences and percent mitochondria
 ```{r, fig.align="center", fig.caption="Corrected PCA Plot"}
 experiment.test.regress <- ScaleData(object = experiment.test, 
                     vars.to.regress = c("batchid"), model.use = "linear")
-
-experiment.test.regress <- RunPCA(object =experiment.test.regress)
-
-DimPlot(object = experiment.test.regress, group.by = "batchid", reduction.use = "pca")
+experiment.test.regress <- RunPCA(object =experiment.test.regress, verbose = F)
+#DimPlot(object = experiment.test.regress, group.by = "batchid", reduction.use = "pca")
 ```
 
 ### Corrected TSNE Plot
 ```{r, fig.align="center", fig.caption="Corrected TSNE Plot"}
-experiment.test.regress <- RunTSNE(object = experiment.test.regress, dims.use = 1:pcs.use)
+experiment.test.regress <- RunTSNE(object = experiment.test.regress, dims = 1:pcs.use)
 DimPlot(object = experiment.test.regress, group.by = "batchid", reduction = "tsne")
 ```
 
-## COMBAT corrected, https://academic.oup.com/biostatistics/article-lookup/doi/10.1093/biostatistics/kxj037
 
-```{r}
+
+
+
+## COMBAT corrected
+https://academic.oup.com/biostatistics/article-lookup/doi/10.1093/biostatistics/kxj037
+```{r, warning=FALSE,error=FALSE,message=FALSE}
 library(sva)
 ?ComBat
 m = as.matrix(GetAssayData(experiment.test))
-com = ComBat(dat=m, batch=as.numeric(as.factor(experiment.test$orig.ident)), prior.plots=FALSE, par.prior=TRUE)
+#m[1:5,1:5]
 ```
 
-
+Why are they performing batch correction across the "orig.ident" and not "batchid" that was used in Seurat ScaleData vars to regress?
 ```{r}
+com = ComBat(dat=m, batch=as.numeric(as.factor(experiment.test$orig.ident)), prior.plots=FALSE, par.prior=TRUE)
+
 experiment.test.combat <- experiment.test
 experiment.test.combat <- SetAssayData(experiment.test.combat, new.data = as.matrix(com))
 experiment.test.combat = ScaleData(experiment.test.combat)
 ```
 
-### Principal components on ComBat adjusted data
+Principal components on ComBat adjusted data
 ```{r, fig.cap = "PCA Plot, Combat adjusted"}
-experiment.test.combat <- RunPCA(object = experiment.test.combat)
-
-DimPlot(object = experiment.test.combat, group.by = "batchid", reduction = "pca")
+experiment.test.combat <- RunPCA(object = experiment.test.combat, verbose =F)
+#DimPlot(object = experiment.test.combat, group.by = "batchid", reduction = "pca")
 ```
 
-TSNE plot on ComBat adjusted data
+### TSNE plot on ComBat adjusted data
 ```{r, fig.cap = "TSNE plot, ComBat adjusted "}
-experiment.test.combat <- RunTSNE(object = experiment.test.combat, dims.use = 1:pcs.use)
+experiment.test.combat <- RunTSNE(object = experiment.test.combat, dims = 1:pcs.use)
 DimPlot(object = experiment.test.combat, group.by = "batchid", reduction = "tsne")
 ```
+
+
+## Paul ComBat correction on Batchid not Orig.Ident
+```{r}
+com_paul = ComBat(dat=m, batch=as.numeric(as.factor(experiment.test$batchid)), prior.plots=FALSE, par.prior=TRUE)
+mycombattest <- experiment.test
+mycombattest <- SetAssayData(mycombattest, new.data = as.matrix(com_paul))
+mycombattest = ScaleData(mycombattest)
+mycombattest <- RunPCA(object = mycombattest, verbose =F)
+mycombattest <- RunTSNE(object = mycombattest, dims = 1:pcs.use)
+DimPlot(object = mycombattest, group.by = "batchid", reduction = "tsne")
+```
+
+
 
 #### Question(s)
 
 1. Try a couple of PCA cutoffs (low and high) and compare the TSNE plots from the different methods.  Do they look meaningfully different?
+
+```{r}
+# data
+#DimPlot(RunTSNE(experiment.test.noc, dims = 1:5), group.by = "batchid", reduction = "tsne")
+DimPlot(RunTSNE(experiment.test.noc, dims = 1:10), group.by = "batchid", reduction = "tsne")  + ggtitle("No correction, pca 10")
+DimPlot(RunTSNE(experiment.test.noc, dims = 1:20), group.by = "batchid", reduction = "tsne")  + ggtitle("No correction, pca 20")
+
+
+#DimPlot(RunTSNE(experiment.test.regress, dims = 1:5), group.by = "batchid", reduction = "tsne") + ggtitle("Seurat regress, pca 5")
+DimPlot(RunTSNE(experiment.test.regress, dims = 1:10), group.by = "batchid", reduction = "tsne") + ggtitle("Seurat regress, pca 10")
+DimPlot(RunTSNE(experiment.test.regress, dims = 1:20), group.by = "batchid", reduction = "tsne") + ggtitle("Seurat regress, pca 20")
+
+```
+
+
 
 ## Get the next Rmd file
 ```{r, eval=FALSE}
