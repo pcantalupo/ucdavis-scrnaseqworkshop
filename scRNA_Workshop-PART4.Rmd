@@ -75,11 +75,6 @@ ce[c(1:5),"PC_1"]
 ```
 
 
-
-# STOPPED HERE
-
-
-
 ### Selecting which PCs to use
 To overcome the extensive technical noise in any single gene, Seurat clusters cells based on their PCA scores, with each PC essentially representing a metagene that combines information across a correlated gene set. Determining how many PCs to include downstream is therefore an important step.
 
@@ -121,3 +116,4 @@ download.file("https://raw.githubusercontent.com/ucdavis-bioinformatics-training
 ```{r}
 sessionInfo()
 ```
+
