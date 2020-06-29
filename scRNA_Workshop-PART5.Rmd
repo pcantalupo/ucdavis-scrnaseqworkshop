@@ -4,11 +4,14 @@ author: "Bioinformatics Core"
 output:
     html_document:
       keep_md: TRUE
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Load libraries
 ```{r, warning=FALSE,error=FALSE,message=FALSE}
 library(Seurat)
+packageVersion('Seurat')
 library(ggplot2)
 ```
 
@@ -28,9 +31,9 @@ The FindClusters function implements the procedure, and contains a resolution pa
 use.pcs = 1:29 
 
 ?FindNeighbors
-experiment.aggregate <- FindNeighbors(experiment.aggregate, reduction="pca", dims = use.pcs)
+experiment.aggregate <- Seurat::FindNeighbors(experiment.aggregate, reduction="pca", dims = use.pcs)
 
-?FindCluster
+?FindClusters
 experiment.aggregate <- FindClusters(
     object = experiment.aggregate, 
     resolution = seq(0.25,4,0.25), 
@@ -41,6 +44,7 @@ experiment.aggregate <- FindClusters(
 Lets first investigate how many clusters each resolution produces and set it to the smallest resolutions of 0.5 (fewest clusters). 
 
 ```{r}
+colnames(experiment.aggregate@meta.data)
 sapply(grep("res",colnames(experiment.aggregate@meta.data),value = TRUE),
        function(x) length(unique(experiment.aggregate@meta.data[,x])))
 
@@ -65,6 +69,8 @@ experiment.aggregate <- RunTSNE(
 Plot TSNE coloring by the slot 'ident' (default).
 ```{r}
 DimPlot(object = experiment.aggregate, pt.size=0.5, reduction = "tsne", label = T)
+DimPlot(object = experiment.aggregate, pt.size=0.5, reduction = "pca", label = T)
+
 ```
 
 
@@ -171,6 +177,9 @@ dim(experiment.aggregate.tmp)
 
 DimPlot(object = experiment.aggregate.tmp, group.by="orig.ident", pt.size=0.5, do.label = TRUE, reduction = "tsne", label = T)
 ```
+
+
+## STOPPED HERE
 
 ## Identifying Marker Genes
 
