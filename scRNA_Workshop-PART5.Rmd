@@ -179,8 +179,6 @@ DimPlot(object = experiment.aggregate.tmp, group.by="orig.ident", pt.size=0.5, d
 ```
 
 
-## STOPPED HERE
-
 ## Identifying Marker Genes
 
 Seurat can help you find markers that define clusters via differential expression.
@@ -240,7 +238,7 @@ markers_all <- FindAllMarkers(
 )
 dim(markers_all)
 head(markers_all)
-table(table(markers_all$gene))
+table(table(markers_all$gene))# unique(markers_all$gene)
 
 markers_all_single <- markers_all[markers_all$gene %in% names(table(markers_all$gene))[table(markers_all$gene) == 1],]
 
